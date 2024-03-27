@@ -2,7 +2,6 @@ package com.service.goals.model;
 
 
 public class EntityDataNodeProperties {
-    private Long id;
 
     public Long getId() {
         return id;
@@ -11,6 +10,7 @@ public class EntityDataNodeProperties {
     public void setId(Long id) {
         this.id = id;
     }
+    private Long id;
 
     private Long entityDataNodeId;
     private String propertyName;

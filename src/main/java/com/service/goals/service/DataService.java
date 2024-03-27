@@ -7,24 +7,15 @@ import java.util.List;
 import java.util.Map;
 
 public interface DataService {
-    boolean deleteRecord(Long id);
+    boolean retireNode(Long id);
 
-    boolean saveDataNode(Map<String,Object> request);
+    boolean createNode(DataNodeDTO dataNodeDTO);
 
-    Map<String,Object> getRecord(String code);
+    List<Map<String, Object>> readAllNodes();
 
-    Boolean updateRecord(Map<String, Object> request);
+    Map<String,Object> readNodeById(Long id);
 
-//    boolean saveDataNode(DataNode dataNode);
+    Boolean updateNode(Long id, DataNodeDTO dataNodeDTO);
 
-//    boolean updateDataNode(Long id, DataNode updatedDataNode);
-
-//    List<DataNode> getAllDataNodes(String type);
-
-//    List<DataNode> getAllDataNodes();
-
-//    List<DataNode> getDataNodesByAttributes(Map<String, Object> attributes);
-
-//    boolean deleteNode(Long id);
-    // Add other methods as needed
+    List<Map<String,Object>> filterSearch(Map<String, Object> filter);
 }

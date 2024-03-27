@@ -4,8 +4,8 @@ package com.service.goals.model;
 public class NodeParentChild {
 
     private Long id;
-    private String parentId;
-    private String childId;
+    private Long parentId;
+    private Long childId;
 
     public Long getId() {
         return id;
@@ -15,19 +15,19 @@ public class NodeParentChild {
         this.id = id;
     }
 
-    public String getParentId() {
+    public Long getParentId() {
         return parentId;
     }
 
-    public void setParentId(String parentId) {
+    public void setParentId(Long parentId) {
         this.parentId = parentId;
     }
 
-    public String getChildId() {
+    public Long getChildId() {
         return childId;
     }
 
-    public void setChildId(String childId) {
+    public void setChildId(Long childId) {
         this.childId = childId;
     }
 

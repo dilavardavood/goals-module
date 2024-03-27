@@ -1,5 +1,6 @@
 package com.service.goals.dto;
 
+import java.util.List;
 import java.util.Map;
 
 public class DataNodeDTO {
@@ -7,8 +8,7 @@ public class DataNodeDTO {
     private String description;
     private String code;
     private String nodeType;
-    private Map<String, Object> moreProperties;
-    private String[] children;
+    private List children;
     private String createdBy;
     private Long createdOn;
     private String updatedBy;
@@ -46,19 +46,11 @@ public class DataNodeDTO {
         this.nodeType = nodeType;
     }
 
-    public Map<String, Object> getMoreProperties() {
-        return moreProperties;
-    }
-
-    public void setMoreProperties(Map<String, Object> moreProperties) {
-        this.moreProperties = moreProperties;
-    }
-
-    public String[] getChildren() {
+    public List getChildren() {
         return children;
     }
 
-    public void setChildren(String[] children) {
+    public void setChildren(List children) {
         this.children = children;
     }
 

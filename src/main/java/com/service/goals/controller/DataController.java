@@ -1,8 +1,9 @@
 package com.service.goals.controller;
 
-import com.service.goals.model.DataNode;
+import com.service.goals.dto.DataNodeDTO;
 import com.service.goals.service.DataService;
 import com.service.goals.utils.Constants;
+import com.service.goals.utils.Constants.Endpoints;
 import com.service.goals.utils.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,16 +14,16 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping(Constants.DATANODE_ENDPOINT)
+@RequestMapping(Endpoints.DATANODE_ENDPOINT)
 public class DataController {
 
     @Autowired
     DataService dataService;
 
-    @PostMapping(Constants.CREATE_NODE)
-    public ResponseEntity<Response<Boolean>> createDataNode(@RequestBody Map<String,Object> request) {
+    @PostMapping(Endpoints.CREATE_NODE)
+    public ResponseEntity<Response<Boolean>> createDataNode(@RequestBody DataNodeDTO dataNodeDTO) {
         try {
-            boolean result = dataService.saveDataNode(request);
+            boolean result = dataService.createNode(dataNodeDTO);
             Response<Boolean> response = new Response<>(Constants.SUCCESS, null, HttpStatus.CREATED.value(), result);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -30,10 +31,21 @@ public class DataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-    @PatchMapping(Constants.UPDATE_NODE)
-    public ResponseEntity<Response<Boolean>> updateRecord(@RequestBody Map<String,Object> request) {
+    @GetMapping(Endpoints.READ_ALL)
+    public ResponseEntity<Response<List<Map<String,Object>>>> getAllRecord() {
         try {
-            boolean result = dataService.updateRecord(request);
+            List<Map<String,Object>> result = dataService.readAllNodes();
+            Response<List<Map<String,Object>>> response = new Response<>(Constants.SUCCESS, null, HttpStatus.OK.value(), result);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Response<List<Map<String,Object>>> errorResponse = new Response<>(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    @PatchMapping(Endpoints.UPDATE_NODE)
+    public ResponseEntity<Response<Boolean>> updateRecord(@RequestParam Long id,@RequestBody DataNodeDTO dataNodeDTO) {
+        try {
+            boolean result = dataService.updateNode(id, dataNodeDTO);
             Response<Boolean> response = new Response<>(Constants.SUCCESS, null, HttpStatus.OK.value(), result);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -41,10 +53,10 @@ public class DataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-    @GetMapping("/get")
-    public ResponseEntity<Response<Map<String,Object>>> getRecord(@RequestParam String code) {
+    @GetMapping(Endpoints.READ_BY_ID)
+    public ResponseEntity<Response<Map<String,Object>>> getRecord(@RequestParam Long id) {
         try {
-            Map<String,Object> result = dataService.getRecord(code);
+            Map<String,Object> result = dataService.readNodeById(id);
             Response<Map<String,Object> > response = new Response<>(Constants.SUCCESS, null, HttpStatus.OK.value(), result);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -52,36 +64,22 @@ public class DataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
-    @GetMapping(Constants.GET_ALL_NODE)
-    public ResponseEntity<Response<List<DataNode>>> getAllDataNodes() {
-//        try {
-//            List<DataNode> dataNodes = dataService.getAllDataNodes();
-//            Response<List<DataNode>> response = new Response<>(Constants.SUCCESS, null, HttpStatus.OK.value(), dataNodes);
-//            return ResponseEntity.ok(response);
-//        } catch (Exception e) {
-//            Response<List<DataNode>> errorResponse = new Response<>(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-//        }
-        return null;
-    }
-    @GetMapping(Constants.FILTER_BY)
-    public ResponseEntity<Response<List<DataNode>>> getDataNodesByAttributes(@RequestParam Map<String, Object> attributes) {
-        List<DataNode> dataNodeList = null;
-//        try {
-//            dataNodeList = dataService.getDataNodesByAttributes(attributes);
-//            Response<List<DataNode>> response = new Response<>(Constants.SUCCESS, null, 200, dataNodeList);
-//            return ResponseEntity.ok(response);
-//        } catch (Exception e) {
-//            Response<List<DataNode>> errorResponse = new Response<>(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-//        }
-        return null;
+    @PostMapping(Endpoints.FILTER_BY)
+    public ResponseEntity<Response<List<Map<String, Object>>>> getDataNodesByFilter(@RequestBody Map<String, Object> filter) {
+        try {
+            List<Map<String, Object>> result = dataService.filterSearch(filter);
+            Response<List<Map<String, Object>>> response = new Response<>(Constants.SUCCESS, null, 200, result);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Response<List<Map<String, Object>>> errorResponse = new Response<>(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
-    @DeleteMapping("/delete/")
+    @DeleteMapping(Endpoints.DELETE)
     public ResponseEntity<Response<Boolean>> deleteRecord(@RequestParam Long id){
         try {
-            boolean result = dataService.deleteRecord(id);
+            boolean result = dataService.retireNode(id);
             Response response = new Response(Constants.SUCCESS,null,200,result);
             return ResponseEntity.ok(response);
         } catch (Exception e) {

@@ -1,18 +1,11 @@
-package com.service.goals.model;
+package com.service.goals.dto;
 
+import java.util.Map;
 
-public class EntityDataNode {
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
+public class EntityDataNodeDTO {
     private Long id;
     private Long entityId;
-    private Long entityType;
+    private String entityType;
 
     private Long dataNodeId;
 
@@ -25,8 +18,16 @@ public class EntityDataNode {
     private String updatedBy;
 
     private String updatedOn;
+    private Map<String,Object> properties;
 
-    // Getters and setters
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public Long getEntityId() {
         return entityId;
     }
@@ -35,11 +36,11 @@ public class EntityDataNode {
         this.entityId = entityId;
     }
 
-    public Long getEntityType() {
+    public String getEntityType() {
         return entityType;
     }
 
-    public void setEntityType(Long entityType) {
+    public void setEntityType(String entityType) {
         this.entityType = entityType;
     }
 
@@ -91,5 +92,11 @@ public class EntityDataNode {
         this.updatedOn = updatedOn;
     }
 
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
 
+    public void setProperties(Map<String, Object> properties) {
+        this.properties = properties;
+    }
 }

@@ -1,5 +1,6 @@
 package com.service.goals.repository;
 
+import com.service.goals.dto.DataNodeDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,134 +24,150 @@ public class DataNodeJDBC {
         String sql = "DELETE FROM data_node WHERE id = ?";
         jdbcTemplate.update(sql, id);
     }
-    public Boolean insertRecord(Map<String,Object> request) {
+
+    public Long insertRecord(DataNodeDTO dataNodeDTO) {
         try {
-            Map<String, Object> dataNode = (Map<String, Object>) request.get("dataNode");
             // Insert into DataNodes table
-            String dataNodeQuery = "INSERT INTO data_node (name, description, code, node_type, created_on, created_by, updated_on, updated_by) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP, ?)";
-            jdbcTemplate.update(dataNodeQuery, dataNode.get("name"), dataNode.get("description"), dataNode.get("code"), dataNode.get("nodeType"), "admin", "admin");
+            String dataNodeQuery = "INSERT INTO data_node (name, description, code, node_type, created_on, created_by, updated_on, updated_by) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?, CURRENT_TIMESTAMP, ?) RETURNING id";
+            Long dataNodeId = jdbcTemplate.queryForObject(dataNodeQuery, Long.class, dataNodeDTO.getName(), dataNodeDTO.getDescription(), dataNodeDTO.getCode(), dataNodeDTO.getNodeType(), "admin", "admin");
 
-            // Retrieve the ID of the newly inserted row in DataNodes table
-            Long dataNodeId = jdbcTemplate.queryForObject("SELECT currval('datanodes_id_seq')", Long.class);
-
-            // Insert into EDNProperty table
-            String ednPropertyQuery = "INSERT INTO edn_property (entity_data_node_id, property_name, property_value) VALUES (?, ?, ?)";
-            for (Map.Entry<String, Object> entry : ((Map<String, Object>) request.get("moreProperties")).entrySet()) {
-                jdbcTemplate.update(ednPropertyQuery, dataNodeId, entry.getKey(), entry.getValue());
+            if(dataNodeDTO.getChildren() != null){
+                String dataNodeRelationsQuery = "INSERT INTO dn_relations (parentid, childid) VALUES (?, ?)";
+                List<Long> children = dataNodeDTO.getChildren();
+                for (int i = 0; i < children.size(); i++) {
+                    jdbcTemplate.update(dataNodeRelationsQuery, dataNodeId, children.get(i));
+                }
             }
-
-            // Insert into DataNode_Relations table
-            String dataNodeRelationsQuery = "INSERT INTO dn_relations (parentID, childID) VALUES (?, ?)";
-            List<String> children = (List<String>) request.get("children");
-            for (String child : children) {
-                jdbcTemplate.update(dataNodeRelationsQuery, dataNode.get("code"), child);
-            }
-
-            return true;
+            return dataNodeId;
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
     }
-    public Map<String, Object> getDataNodeDetails(String code) {
-        Map<String, Object> result = new HashMap<>();
+
+    public List<Map<String, Object>> gelAllDetails() {
+
         try {
-            // Query to retrieve data from DataNodes table
-            String dataNodeQuery = "SELECT * FROM data_node WHERE code = ?";
-            Map<String, Object> dataNode = jdbcTemplate.queryForMap(dataNodeQuery, code);
-//            Long dataNodeId = (Long) dataNode.get("id");
+            String query = "SELECT * FROM data_node";
+            List<Map<String, Object>> results = jdbcTemplate.queryForList(query);
+            for (Map<String, Object> result : results) {
+                Long id = (Long) result.get("id");
+                result.put("children", getChildDetails(id));
+            }
+            return results;
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
 
-            // Query to retrieve more properties from EDNProperty table
-            String ednPropertyQuery = "SELECT * FROM edn_property WHERE entity_data_node_id = CAST(? AS VARCHAR)";
-            List<Map<String, Object>> ednProperties = jdbcTemplate.queryForList(ednPropertyQuery,dataNode.get("id") );
-            dataNode.put("moreProperties", ednProperties);
-
-            // Query to retrieve children from DataNode_Relations table
-            String dataNodeRelationsQuery = "SELECT childid FROM dn_relations WHERE parentid = ?";
-            List<Map<String, Object>> children = jdbcTemplate.queryForList(dataNodeRelationsQuery, code);
-            dataNode.put("children", children);
-
-            result.put("dataNode", dataNode);
+    public Map<String, Object> getDataNodeDetails(Long id) {
+        try {
+            StringBuilder queryBuilder = new StringBuilder("SELECT * FROM data_node WHERE id = ?");
+            Map<String, Object> result = jdbcTemplate.queryForMap(queryBuilder.toString(), id);
+            result.put("children", getChildDetails((Long) result.get("id")));
             return result;
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
     }
-    public Boolean updateRecord(Map<String,Object> request) {
-        try {
-            Map<String, Object> dataNode = (Map<String, Object>) request.get("dataNode");
-            String code = (String) dataNode.get("code");
 
-            // Check if the record with the provided code exists
-            String checkExistingQuery = "SELECT COUNT(*) FROM data_node WHERE code = ?";
-            int count = jdbcTemplate.queryForObject(checkExistingQuery, Integer.class, code);
+
+    public Boolean updateRecord(Long id, DataNodeDTO dataNodeDTO) {
+        try {
+
+            // Check if the record with the provided id exists
+            String checkExistingQuery = "SELECT COUNT(*) FROM data_node WHERE id = ?";
+            int count = jdbcTemplate.queryForObject(checkExistingQuery, Integer.class, id);
 
             if (count == 0) {
-                throw new RuntimeException("Record with code " + code + " does not exist. Update aborted.");
+                throw new RuntimeException("Record with id " + id + " does not exist. Update aborted.");
             }
-
-            // Retrieve existing data node details
-            String retrieveExistingQuery = "SELECT * FROM data_node WHERE code = ?";
-            Map<String, Object> existingDataNode = jdbcTemplate.queryForMap(retrieveExistingQuery, code);
-
-            // Prepare update query and parameters
+//            String retrieveExistingQuery = "SELECT * FROM data_node WHERE id = ?";
+//            Map<String, Object> existingDataNode = jdbcTemplate.queryForMap(retrieveExistingQuery, id);
             StringBuilder updateQuery = new StringBuilder("UPDATE data_node SET ");
             List<Object> params = new ArrayList<>();
-            if (dataNode.containsKey("name") && dataNode.get("name") != null) {
+
+            if (dataNodeDTO.getName() != null) {
                 updateQuery.append("name = ?, ");
-                params.add(dataNode.get("name"));
-            } else {
-                params.add(existingDataNode.get("name"));
+                params.add(dataNodeDTO.getName());
             }
-            if (dataNode.containsKey("description") && dataNode.get("description") != null) {
+            if (dataNodeDTO.getDescription() != null) {
                 updateQuery.append("description = ?, ");
-                params.add(dataNode.get("description"));
-            } else {
-                params.add(existingDataNode.get("description"));
+                params.add(dataNodeDTO.getDescription());
             }
-            if (dataNode.containsKey("nodeType") && dataNode.get("nodeType") != null) {
+            if (dataNodeDTO.getCode() != null) {
+                updateQuery.append("code = ?, ");
+                params.add(dataNodeDTO.getCode());
+            }
+
+            if (dataNodeDTO.getNodeType() != null) {
                 updateQuery.append("node_type = ?, ");
-                params.add(dataNode.get("nodeType"));
-            } else {
-                params.add(existingDataNode.get("node_type"));
+                params.add(dataNodeDTO.getNodeType());
             }
-            updateQuery.append("updated_on = CURRENT_TIMESTAMP, updated_by = ? WHERE code = ?");
+            if (updateQuery.charAt(updateQuery.length() - 2) == ',') {
+                updateQuery.setLength(updateQuery.length() - 2);
+            }
+            updateQuery.append(" updated_on = CURRENT_TIMESTAMP, updated_by = ?");
             params.add("admin");
-            params.add(code);
 
-            // Execute update query
+            updateQuery.append(" WHERE id = ?");
+            params.add(id);
             jdbcTemplate.update(updateQuery.toString(), params.toArray());
-
-            // Retrieve the ID of the data node
-            Long dataNodeId = jdbcTemplate.queryForObject("SELECT id FROM data_node WHERE code = ?", Long.class, code);
-
-            // Update EDNProperty
-            Map<String, Object> moreProperties = (Map<String, Object>) request.get("moreProperties");
-            if (moreProperties != null) {
-                for (Map.Entry<String, Object> entry : moreProperties.entrySet()) {
-                    String propertyName = entry.getKey();
-                    String propertyValue = (String) entry.getValue();
-                    String propertyQuery = "UPDATE edn_property SET property_value = ? WHERE entity_data_node_id = CAST(? AS VARCHAR) AND property_name = ?";
-                    jdbcTemplate.update(propertyQuery, propertyValue, String.valueOf(dataNodeId), propertyName);
-                }
-            }
-
-            // Update DataNode_Relations table (if needed)
-            List<String> children = (List<String>) request.get("children");
+            List<Long> children = dataNodeDTO.getChildren();
             if (children != null) {
-                // Delete existing relations for the data node
                 String deleteQuery = "DELETE FROM dn_relations WHERE parentID = ?";
-                jdbcTemplate.update(deleteQuery, code);
-                // Insert new relations
+                jdbcTemplate.update(deleteQuery, id);
                 String insertQuery = "INSERT INTO dn_relations (parentID, childID) VALUES (?, ?)";
-                for (String child : children) {
-                    jdbcTemplate.update(insertQuery, code, child);
+                for (int i = 0; i < children.size(); i++) {
+                    jdbcTemplate.update(insertQuery, id, children.get(i));
                 }
             }
-
             return true;
         } catch (DataAccessException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public List<Map<String, Object>> getFilteredDetails(Map<String, Object> filters) {
+        try {
+            StringBuilder queryBuilder = new StringBuilder("SELECT * FROM data_node");
+            List<Object> queryParams = new ArrayList<>();
+
+            if (!filters.isEmpty()) {
+                queryBuilder.append(" WHERE ");
+                int index = 0;
+                for (Map.Entry<String, Object> entry : filters.entrySet()) {
+                    String column = entry.getKey();
+                    Object value = entry.getValue();
+                    if (value != null) {
+                        if (index > 0) {
+                            queryBuilder.append(" AND ");
+                        }
+                        queryBuilder.append(column).append(" = ?");
+                        queryParams.add(value);
+                        index++;
+                    }
+                }
+            }
+
+            String query = queryBuilder.toString();
+            List<Map<String, Object>> result = jdbcTemplate.queryForList(query, queryParams.toArray());
+            for (Map<String, Object> node : result) {
+
+                node.put("children", getChildDetails((Long) node.get("id")));
+            }
+
+            return result;
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public List<Map<String,Object>> getChildDetails(Long id){
+        String dataNodeRelationsQuery = "SELECT childid FROM dn_relations WHERE parentid = ?";
+        List<Map<String, Object>> children = jdbcTemplate.queryForList(dataNodeRelationsQuery, id);
+        for (Map<String, Object> child : children) {
+            child.put("data", getDataNodeDetails((Long) child.get("childid")));
+        }
+        return children;
+    }
 }

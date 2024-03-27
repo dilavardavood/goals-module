@@ -1,17 +1,22 @@
 package com.service.goals.service;
 
-import com.service.goals.dto.DataNodeDTO;
+import com.service.goals.dto.EntityDataNodeDTO;
 import com.service.goals.model.EntityDataNode;
 
 import java.util.List;
 import java.util.Map;
 
 public interface EntityDataService {
-    boolean saveEntityData(EntityDataNode entityDataNode);
+
+    boolean saveEntityData(EntityDataNodeDTO entityDataNodeDTO);
+
+    boolean updateEntityData(Long id, EntityDataNodeDTO entityDataNodeDTO);
 
     List<EntityDataNode> getEntityDataNodesByAttributes(Map<String, Object> attributes);
 
-    List<EntityDataNode> getAllEntityDataNodes();
+    List<EntityDataNodeDTO> getAllEntityDataNodes();
+
+    EntityDataNodeDTO getEntityNodesById(Long id);
 
     boolean deleteEntityNode(Long id);
 }
