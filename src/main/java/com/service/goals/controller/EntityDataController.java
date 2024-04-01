@@ -63,4 +63,15 @@ public class EntityDataController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
+    @PostMapping(Constants.Endpoints.FILTER_BY)
+    public ResponseEntity<Response<List<EntityDataNodeDTO>>> getDataNodesByFilter(@RequestBody EntityDataNodeDTO filter) {
+        try {
+            List<EntityDataNodeDTO> result = entityDataService.filterSearch(filter);
+            Response<List<EntityDataNodeDTO>> response = new Response<>(Constants.SUCCESS, null, 200, result);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            Response<List<EntityDataNodeDTO>> errorResponse = new Response<>(Constants.ERROR, e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
 }

@@ -182,6 +182,94 @@ public class EntityNodeJDBC {
             throw new RuntimeException(e);
         }
     }
+    public List<EntityDataNodeDTO> filterSearch(EntityDataNodeDTO filters) {
+        try {
+            // Base query
+            StringBuilder queryBuilder = new StringBuilder("SELECT ed.id AS entity_data_node_id, ed.entity_id, ed.entity_type, ed.datanode_id, ed.node_type, " +
+                    "ed.created_by, ed.created_on, ed.updated_by, ed.updated_on, " +
+                    "ep.property_name, ep.property_value " +
+                    "FROM entity_datanode ed " +
+                    "LEFT JOIN edn_property ep ON ed.id = ep.entity_data_node_id");
+
+            // Build WHERE clause based on filter DTO
+            List<Object> queryParams = new ArrayList<>();
+            boolean hasWhere = false;
+
+            // Check each field in the filter DTO and add conditions to the WHERE clause accordingly
+            if (filters.getId() != null) {
+                queryBuilder.append(hasWhere ? " AND " : " WHERE ");
+                queryBuilder.append("ed.id = ?");
+                queryParams.add(filters.getId());
+                hasWhere = true;
+            }
+            if (filters.getEntityId() != null) {
+                queryBuilder.append(hasWhere ? " AND " : " WHERE ");
+                queryBuilder.append("ed.entity_id = ?");
+                queryParams.add(filters.getEntityId());
+                hasWhere = true;
+            }
+            if (filters.getEntityType() != null) {
+                queryBuilder.append(hasWhere ? " AND " : " WHERE ");
+                queryBuilder.append("ed.entity_type = ?");
+                queryParams.add(filters.getEntityType());
+                hasWhere = true;
+            }
+            if (filters.getNodeType() != null) {
+                queryBuilder.append(hasWhere ? " AND " : " WHERE ");
+                queryBuilder.append("ed.node_type = ?");
+                queryParams.add(filters.getEntityType());
+                hasWhere = true;
+            }
+            // Repeat similar checks for other fields in the filter DTO
+
+            // Execute the query
+            String query = queryBuilder.toString();
+            List<Map<String, Object>> rows = jdbcTemplate.queryForList(query, queryParams.toArray());
+
+            // Map query result to DTO objects
+            List<EntityDataNodeDTO> entityDataNodeDTOs = new ArrayList<>();
+            for (Map<String, Object> row : rows) {
+                EntityDataNodeDTO entityDataNodeDTO = mapRowToEntityDataNodeDTO(row);
+                entityDataNodeDTOs.add(entityDataNodeDTO);
+            }
+
+            // Return list of DTO objects
+            return entityDataNodeDTOs;
+        } catch (DataAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    private EntityDataNodeDTO mapRowToEntityDataNodeDTO(Map<String, Object> row) {
+        EntityDataNodeDTO entityDataNodeDTO = new EntityDataNodeDTO();
+
+        // Set DTO attributes
+        entityDataNodeDTO.setId((Long) row.get("entity_data_node_id"));
+        entityDataNodeDTO.setEntityId((Long) row.get("entity_id"));
+        entityDataNodeDTO.setEntityType((String) row.get("entity_type"));
+        entityDataNodeDTO.setDataNodeId((Long) row.get("datanode_id"));
+        entityDataNodeDTO.setNodeType((String) row.get("node_type"));
+        entityDataNodeDTO.setCreatedBy((String) row.get("created_by"));
+        entityDataNodeDTO.setCreatedOn((String) row.get("created_on"));
+        entityDataNodeDTO.setUpdatedBy((String) row.get("updated_by"));
+        entityDataNodeDTO.setUpdatedOn((String) row.get("updated_on"));
+
+        // Create or retrieve properties map
+        Map<String, Object> properties = entityDataNodeDTO.getProperties();
+        if (properties == null) {
+            properties = new HashMap<>();
+            entityDataNodeDTO.setProperties(properties);
+        }
+
+        // Set properties from row
+        String propertyName = (String) row.get("property_name");
+        if (propertyName != null) {
+            Object propertyValue = row.get("property_value");
+            properties.put(propertyName, propertyValue);
+        }
+
+        return entityDataNodeDTO;
+    }
+
 
 
 }

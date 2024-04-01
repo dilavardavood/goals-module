@@ -68,6 +68,15 @@ public class EntityDataServiceImpl implements EntityDataService {
 
     }
     @Override
+    public List<EntityDataNodeDTO> filterSearch(EntityDataNodeDTO entityDataNodeDTO){
+        try {
+            return entityNodeJDBC.filterSearch(entityDataNodeDTO);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+    @Override
     public boolean deleteEntityNode(Long id) {
         try {
             return true;

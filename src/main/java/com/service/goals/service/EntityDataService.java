@@ -18,5 +18,7 @@ public interface EntityDataService {
 
     EntityDataNodeDTO getEntityNodesById(Long id);
 
+    List<EntityDataNodeDTO> filterSearch(EntityDataNodeDTO entityDataNodeDTO);
+
     boolean deleteEntityNode(Long id);
 }
